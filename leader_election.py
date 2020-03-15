@@ -1,9 +1,8 @@
-from collections import Counter
 from random import choice
 
 from bioelectric_events import BioelectricEvent, SimpleLigandEvent
 from core import Cell
-from membranes import Dead, Membrane
+from ligand_sites import SimpleLigandSite, LigandSite
 
 
 class WinnerEvent(BioelectricEvent):
@@ -16,11 +15,11 @@ class WinnerEvent(BioelectricEvent):
     def __init__(self):
         super().__init__(lambda x: True if x >= 2 else False)
 
-    def __call__(self, cell: Cell):
+    def update(self, cell: Cell):
         if self.firing_function(cell.potential):
             for node in cell.edges:
                 node.bind_ligand("vic")
-            cell.morphic_tansform(0, 0, 0, [], Dead, "winner")
+            cell.morphic_tansform(0, 0, 0, [], [], "winner")
 
 
 class CompetingEvent(SimpleLigandEvent):
@@ -39,43 +38,24 @@ class CompetingEvent(SimpleLigandEvent):
         super().__init__(ff, "adj", 0.5)
 
 
-class LeaderMembrane(Membrane):
-    """
-    The membrane for cells competing in leader election
+class WinnerSite(LigandSite):
+    def __init__(self):
 
-    :param adj: How many sites available for ligands transmitted by cells still in competition.
-    """
-    def __init__(self, adj=1):
-        super().__init__(**locals(), vic=1)
-        self.ligands = Counter()
+        super().__init__("vic", 1)
 
-    def bind_ligand(self, ligand: str):
-        """
-        Bind a ligand if there is an available site
+    def update(self, cell: Cell):
+        if self.ligand_count > 0:
+            cell.morphic_tansform(0, 0, 0, [], [], "looser")
+            self.ligand_count = 0
 
-        :param ligand: the ligand to bind
-        :return: None
-        """
-        if self.ligands[ligand] < self.sites[ligand]:
-            self.ligands[ligand] += 1
-        else:
-            pass
 
-    def update(self):
-        """
-        Updates the cell the membrane belongs to. If a neighbor fired decreases potential by -3/2. If a ligand from a
-        winner arrives triggers a morphic change to a looser
-
-        :return: None
-        """
-        if self.ligands["vic"] > 0:
-            self.cell.morphic_tansform(0, 0, 0, [], Dead(self.cell), "looser")
-        elif self.ligands["adj"] > 0:
-            self.cell.potential_change += -3/2
-        self.ligands.clear()
+class CompetitionSite(SimpleLigandSite):
+    def __init__(self, sites: int):
+        super().__init__("adj", sites, -3/2)
 
 
 class LeaderElection(Cell):
-    def __init__(self, maximum_degree: int, ligand_sites={"adj": 1}):
-        super().__init__(0, -2, 2, 0.5, {CompetingEvent(), WinnerEvent()}, LeaderMembrane, maximum_degree,
-                         "Competing", ligand_sites)
+    def __init__(self, maximum_degree: int, competition_sites: int):
+        super().__init__(0, -2, 2, 0.5, {CompetingEvent(), WinnerEvent()},
+                         {CompetitionSite(competition_sites), WinnerSite()},
+                         maximum_degree, "Competing")

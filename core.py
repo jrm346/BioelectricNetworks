@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from typing import Iterable, Dict
+from typing import Iterable
 from bioelectric_events import BioelectricEvent
-from membranes import Membrane
+from ligand_sites import LigandSite
 
 
 class Cell:
     def __init__(self, initial_potential: float, minimum_potential: float,
                  equilibrium_potential: float, equilibrium_gradient: float,
-                 bioelectric_events: Iterable[BioelectricEvent], membrane_class: type(Membrane),
-                 maximum_degree: int, status: str, ligand_sites={}):
+                 bioelectric_events: Iterable[BioelectricEvent], ligand_sites: Iterable[LigandSite],
+                 maximum_degree: int, status: str):
         self.type = status
         self.potential = initial_potential
         self.equilibrium_potential = equilibrium_potential
@@ -18,7 +18,7 @@ class Cell:
         self.bioelectric_events = bioelectric_events
         self.maximum_degree = maximum_degree
         self.edges = set()
-        self.membrane = membrane_class(self, **ligand_sites)
+        self.ligand_sites = {site.ligand: site for site in ligand_sites}
         self.potential_change = 0
 
     def add_edge(self, node: Cell) -> None:
@@ -44,7 +44,8 @@ class Cell:
         :param ligand: The ligand that is sent
         :return: None
         """
-        self.membrane.bind(ligand)
+        if ligand in self.ligand_sites:
+            self.ligand_sites[ligand].bind()
 
     def attempt_events(self) -> None:
         """
@@ -53,7 +54,7 @@ class Cell:
         :return: None
         """
         for event in self.bioelectric_events:
-            event(self)
+            event.update(self)
 
     def apply_membrane_function(self) -> None:
         """
@@ -62,7 +63,8 @@ class Cell:
 
         :return: None
         """
-        self.membrane(self)
+        for site in self.ligand_sites.values():
+            site.update(self)
 
     def apply_gradient(self) -> None:
         """
@@ -103,8 +105,8 @@ class Cell:
         self.potential_change = 0
 
     def morphic_tansform(self, minimum_potential: float, equilibrium_potential: float, equilibrium_gradient: float,
-                         bioelectric_events: Iterable[BioelectricEvent], membrane_class: type(Membrane),
-                         status: str, ligand_sites: Dict[str, int] = {}):
+                         bioelectric_events: Iterable[BioelectricEvent], ligand_sites: Iterable[LigandSite],
+                         status: str):
         """
         This method if for applying a morphological change to the cell.
 
@@ -112,9 +114,8 @@ class Cell:
         :param equilibrium_potential: the new equilibrium potential
         :param equilibrium_gradient: The new equilibrium gradient
         :param bioelectric_events: The new bioelectric events
-        :param membrane_class: The new Membrane type
+        :param ligand_sites: The new  ligand sites available on the cell
         :param status: The new status of the cell
-        :param ligand_sites: The new dictionary of ligand sites available on he membrane
         :return: None
         """
         self.type = status
@@ -122,4 +123,4 @@ class Cell:
         self.equilibrium_gradient = equilibrium_gradient
         self.minimum_potential = minimum_potential
         self.bioelectric_events = bioelectric_events
-        self.membrane = membrane_class(self, **ligand_sites)
+        self.ligand_sites = {site.ligand: site for site in ligand_sites}

@@ -9,7 +9,7 @@ class BioelectricEvent(ABC):
         self.firing_function = firing_function
 
     @abstractmethod
-    def __call__(self, cell: Cell):
+    def update(self, cell: Cell):
         """
         The bioelectric event. Takes a potential and checks if the event fires.
 
@@ -25,7 +25,7 @@ class SimpleLigandEvent(BioelectricEvent):
         self.ligand = ligand
         self.offset = offset
 
-    def __call__(self, cell: Cell):
+    def update(self, cell: Cell):
         """
         The bioelectric event. Takes a potential and checks if the event fires. If it does
 
