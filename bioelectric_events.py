@@ -1,7 +1,8 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from core import Cell
+from becell import BECell
 
 
 class BioelectricEvent(ABC):
@@ -9,7 +10,7 @@ class BioelectricEvent(ABC):
         self.firing_function = firing_function
 
     @abstractmethod
-    def update(self, cell: Cell):
+    def update(self, cell: BECell):
         """
         The bioelectric event. Takes a potential and checks if the event fires.
 
@@ -25,7 +26,7 @@ class SimpleLigandEvent(BioelectricEvent):
         self.ligand = ligand
         self.offset = offset
 
-    def update(self, cell: Cell):
+    def update(self, cell: BECell):
         """
         The bioelectric event. Takes a potential and checks if the event fires. If it does
 
@@ -36,6 +37,6 @@ class SimpleLigandEvent(BioelectricEvent):
             for node in cell.edges:
                 node.bind_ligand(self.ligand)
 
-        cell.potential_change += self.offset
-        pass
+            cell.potential_change += self.offset
+
 

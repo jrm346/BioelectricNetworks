@@ -1,6 +1,4 @@
-from abc import abstractmethod, ABC
-
-from core import Cell
+from abc import abstractmethod
 
 
 class LigandSite:
@@ -10,7 +8,7 @@ class LigandSite:
         self.ligand_count = 0
 
     @abstractmethod
-    def update(self, cell: Cell):
+    def update(self, cell):
         pass
 
     def bind(self):
@@ -23,7 +21,7 @@ class SimpleLigandSite(LigandSite):
         super().__init__(ligand, sites)
         self.potential_update = potential_update
 
-    def update(self, cell: Cell):
+    def update(self, cell):
         if self.ligand_count > 0:
             cell.potential_change += self.potential_update * self.ligand_count
             self.ligand_count = 0

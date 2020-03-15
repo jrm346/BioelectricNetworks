@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from typing import Iterable
-from bioelectric_events import BioelectricEvent
+
 from ligand_sites import LigandSite
 
 
-class Cell:
+class BECell:
     def __init__(self, initial_potential: float, minimum_potential: float,
                  equilibrium_potential: float, equilibrium_gradient: float,
-                 bioelectric_events: Iterable[BioelectricEvent], ligand_sites: Iterable[LigandSite],
+                 bioelectric_events: Iterable, ligand_sites: Iterable[LigandSite],
                  maximum_degree: int, status: str):
-        self.type = status
+        self.status = status
         self.potential = initial_potential
         self.equilibrium_potential = equilibrium_potential
         self.equilibrium_gradient = equilibrium_gradient
@@ -21,7 +21,13 @@ class Cell:
         self.ligand_sites = {site.ligand: site for site in ligand_sites}
         self.potential_change = 0
 
-    def add_edge(self, node: Cell) -> None:
+    def maxed_out(self) -> bool:
+        if len(self.edges) >= self.maximum_degree:
+            return True
+        else:
+            return False
+
+    def add_edge(self, node: BECell) -> None:
         """
         Add an edge to the given node. Edges are undirected so both nodes are updated in place.
 
@@ -47,7 +53,7 @@ class Cell:
         if ligand in self.ligand_sites:
             self.ligand_sites[ligand].bind()
 
-    def attempt_events(self) -> None:
+    def bioelectric_updates(self) -> None:
         """
         Attempts to perform the bioelectric event.
 
@@ -56,7 +62,7 @@ class Cell:
         for event in self.bioelectric_events:
             event.update(self)
 
-    def apply_membrane_function(self) -> None:
+    def ligand_updates(self) -> None:
         """
         Apply the membrane function to the received ligands, (often clears the ligands and updates the
         potential_change).
@@ -66,7 +72,7 @@ class Cell:
         for site in self.ligand_sites.values():
             site.update(self)
 
-    def apply_gradient(self) -> None:
+    def gradient_update(self) -> None:
         """
         Apply the update based on equilibrium gradient
 
@@ -93,7 +99,7 @@ class Cell:
 
         :return: None
         """
-        self.potential_change = min(self.potential_change, self.minimum_potential)
+        self.potential_change = max(self.potential_change, self.minimum_potential)
 
     def update_potential(self) -> None:
         """
@@ -118,7 +124,7 @@ class Cell:
         :param status: The new status of the cell
         :return: None
         """
-        self.type = status
+        self.status = status
         self.equilibrium_potential = equilibrium_potential
         self.equilibrium_gradient = equilibrium_gradient
         self.minimum_potential = minimum_potential
